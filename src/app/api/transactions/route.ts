@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createTransaction } from "@/lib/firestore";
 import { v2 as cloudinary } from "cloudinary";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_API_NAME,
@@ -8,55 +10,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Mock transaction storage (in real app, use database)
-let transactions: any[] = [
-  {
-    id: "tx_1",
-    userId: "user_1",
-    type: "withdrawal",
-    wldAmount: 10,
-    idrAmount: 285000,
-    fee: 7125,
-    status: "pending",
-    timestamp: "2024-01-15T10:30:00Z",
-    walletAddress: "0x1234567890abcdef1234567890abcdef12345678",
-  },
-];
-
-export const runtime = "nodejs"; // pastikan ini Node, bukan edge
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-    const status = searchParams.get("status");
-
-    let filteredTransactions = transactions;
-
-    if (userId) {
-      filteredTransactions = filteredTransactions.filter(
-        (tx) => tx.userId === userId
-      );
-    }
-
-    if (status) {
-      filteredTransactions = filteredTransactions.filter(
-        (tx) => tx.status === status
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      transactions: filteredTransactions,
-    });
-  } catch (error) {
-    console.error("Transaction fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch transactions" },
-      { status: 500 }
-    );
-  }
-}
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
@@ -64,9 +18,11 @@ export async function POST(req: Request) {
 
     const uid = formData.get("uid") as string;
     const wldAmount = parseFloat(formData.get("wldAmount") as string);
+    const rate = parseFloat(formData.get("rate") as string);
     const sourceAddress = formData.get("sourceAddress") as string;
     const bankAccount = formData.get("bankAccount") as string;
     const bankName = formData.get("bankName") as string;
+    const bankProvider = formData.get("bankProvider") as string;
     const proofFile = formData.get("proof") as File;
 
     if (!uid || !wldAmount || !bankAccount || !bankName || !proofFile) {
@@ -76,11 +32,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // konversi File ke Buffer
     const arrayBuffer = await proofFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // upload ke Cloudinary
     const uploadResult: any = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         { resource_type: "auto", folder: "wld_proofs" },
@@ -92,73 +46,41 @@ export async function POST(req: Request) {
       uploadStream.end(buffer);
     });
 
-    // hitung amount IDR
-    const rate = parseFloat(formData.get("rate") as string) || 28500;
-    const amount = wldAmount * rate;
+    // parse ke desimal untuk dimasukan ke firebase
+    const formattedAmount = Number(wldAmount.toFixed(8));
 
-    // simpan transaksi ke Firestore
+    const receivedAmount = parseFloat(
+      (formattedAmount * rate - 10000).toFixed(2)
+    );
+
     const txn = await createTransaction(uid, {
       type: "withdrawal",
-      wldAmount,
+      wldAmount: formattedAmount,
       sourceAddress,
-      amount,
-      status: "pending",
+      receivedAmount,
+      rate,
+      wldTransferStatus: "pending",
+      transactionStatus: "pending",
       bankAccount,
       bankName,
+      bankProvider,
       proofUrl: uploadResult.secure_url,
       created_at: new Date(),
     });
+
+    if (txn.id) {
+      const messagesRef = collection(db, "transactions", txn.id, "messages");
+      await addDoc(messagesRef, {
+        sender: "system",
+        message: `⏳ Terima kasih! Transaksi kamu telah kami terima dan sedang menunggu konfirmasi dari jaringan. Kami akan memprosesnya segera setelah WLD masuk ke wallet kami.`,
+        timestamp: serverTimestamp(),
+        read: false,
+      });
+    }
 
     return NextResponse.json({ success: true, id: txn.id });
   } catch (error) {
     console.error("Transaction API error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
-  }
-}
-
-export async function PATCH(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const transactionId = searchParams.get("id");
-    const { status } = await request.json();
-
-    if (!transactionId) {
-      return NextResponse.json(
-        { error: "Transaction ID is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!status || !["pending", "completed", "failed"].includes(status)) {
-      return NextResponse.json(
-        { error: "Valid status is required" },
-        { status: 400 }
-      );
-    }
-
-    const transactionIndex = transactions.findIndex(
-      (tx) => tx.id === transactionId
-    );
-    if (transactionIndex === -1) {
-      return NextResponse.json(
-        { error: "Transaction not found" },
-        { status: 404 }
-      );
-    }
-
-    transactions[transactionIndex].status = status;
-    transactions[transactionIndex].updatedAt = new Date().toISOString();
-
-    return NextResponse.json({
-      success: true,
-      transaction: transactions[transactionIndex],
-      message: `Transaction status updated to ${status}`,
-    });
-  } catch (error) {
-    console.error("Transaction update error:", error);
-    return NextResponse.json(
-      { error: "Failed to update transaction" },
-      { status: 500 }
-    );
   }
 }

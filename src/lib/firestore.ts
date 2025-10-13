@@ -1,4 +1,3 @@
-// lib/firestore.ts
 import { db } from "./firebase";
 import {
   collection,
@@ -21,7 +20,6 @@ export const getUserTransactions = async (uid: string) => {
 export const createTransaction = async (uid: string, data: any) => {
   return await addDoc(collection(db, "transactions"), {
     user_id: uid,
-    status: "waiting_confirmation",
     created_at: serverTimestamp(),
     ...data,
   });

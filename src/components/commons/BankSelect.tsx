@@ -18,7 +18,7 @@ export function BankSelect({ bankProvider, setBankProvider }: any) {
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Pilih bank atau e-wallet" />
         </SelectTrigger>
-        <SelectContent className="max-h-[200px] overflow-y-auto">
+        <SelectContent className="max-h-[200px] overflow-y-auto bg-cyber-bg-primary">
           <SelectItem value="bca">BCA</SelectItem>
           <SelectItem value="bni">BNI</SelectItem>
           <SelectItem value="bri">BRI</SelectItem>

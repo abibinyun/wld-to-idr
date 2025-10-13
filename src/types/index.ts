@@ -1,5 +1,3 @@
-// /types/index.ts
-
 import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type User = {
@@ -9,7 +7,6 @@ export type User = {
   phone: string;
   bank_name: string;
   bank_account: string;
-  // 💡 Tambahkan properti 'role' di sini
   role: "user" | "admin";
 };
 
@@ -21,14 +18,7 @@ export type Admin = {
   online: boolean;
 };
 
-export type TransactionStatus =
-  | "draft"
-  | "waiting_confirmation"
-  | "pending"
-  | "verified"
-  | "paid"
-  | "completed"
-  | "failed";
+export type TransactionStatus = "pending" | "confirmed" | "failed";
 
 export type Transaction = {
   id: string;
@@ -46,7 +36,6 @@ export type Transaction = {
 
 export type Message = {
   id: string;
-  // 💡 Perbaiki sender menjadi 'user' | 'admin'
   sender: "user" | "admin";
   message: string;
   timestamp: Timestamp | any;

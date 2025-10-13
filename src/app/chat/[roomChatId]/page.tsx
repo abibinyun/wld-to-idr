@@ -1,384 +1,3 @@
-// "use client";
-
-// import { useState, useEffect, useRef } from "react";
-// import { useParams } from "next/navigation";
-// import {
-//   collection,
-//   query,
-//   orderBy,
-//   onSnapshot,
-//   addDoc,
-//   doc,
-//   getDoc,
-//   serverTimestamp,
-// } from "firebase/firestore";
-// import { db } from "@/lib/firebase";
-// import { Input } from "@/components/ui/input";
-// import { Button } from "@/components/ui/button";
-// import { Badge } from "@/components/ui/badge";
-// import { ArrowRight } from "lucide-react";
-
-// interface Message {
-//   id: string;
-//   senderId: string;
-//   content: string;
-//   timestamp: Date;
-// }
-
-// export default function ChatPage() {
-//   const params = useParams();
-//   const roomChatId = Array.isArray(params.roomChatId)
-//     ? params.roomChatId[0]
-//     : params.roomChatId;
-
-//   const [messages, setMessages] = useState<Message[]>([]);
-//   const [newMessage, setNewMessage] = useState("");
-//   const [status, setStatus] = useState<"pending" | "completed" | "failed">(
-//     "pending"
-//   );
-//   const [loading, setLoading] = useState(true);
-
-//   const bottomRef = useRef<HTMLDivElement>(null);
-
-//   useEffect(() => {
-//     if (!roomChatId) return;
-
-//     // listen roomChat status
-//     const roomRef = doc(db, "roomChats", roomChatId);
-//     const unsubscribeRoom = onSnapshot(roomRef, (snap) => {
-//       if (snap.exists()) {
-//         const data = snap.data();
-//         setStatus(data.status || "pending");
-//       }
-//     });
-
-//     // listen messages
-//     const messagesRef = collection(db, "roomChats", roomChatId, "messages");
-//     const q = query(messagesRef, orderBy("timestamp", "asc"));
-//     const unsubscribeMessages = onSnapshot(q, (snapshot) => {
-//       setMessages(
-//         snapshot.docs.map((doc) => {
-//           const data = doc.data() as Omit<Message, "id">;
-//           return { id: doc.id, ...data };
-//         })
-//       );
-//       // scroll to bottom
-//       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-//       setLoading(false);
-//     });
-
-//     return () => {
-//       unsubscribeRoom();
-//       unsubscribeMessages();
-//     };
-//   }, [roomChatId]);
-
-//   const handleSendMessage = async () => {
-//     if (!newMessage.trim() || !roomChatId) return;
-//     try {
-//       const messagesRef = collection(db, "roomChats", roomChatId, "messages");
-//       await addDoc(messagesRef, {
-//         senderId: "user", // bisa diganti dengan uid user
-//         content: newMessage,
-//         timestamp: serverTimestamp(),
-//       });
-//       setNewMessage("");
-//     } catch (err) {
-//       console.error(err);
-//     }
-//   };
-
-//   if (!roomChatId) return <div>Room tidak ditemukan</div>;
-
-//   return (
-//     <div className="min-h-screen bg-slate-50 flex flex-col">
-//       {/* Header */}
-//       <header className="bg-white shadow p-4 flex justify-between items-center">
-//         <h1 className="font-bold text-lg">Chat Transaksi</h1>
-//         <Badge
-//           variant={
-//             status === "completed"
-//               ? "default"
-//               : status === "pending"
-//               ? "secondary"
-//               : "destructive"
-//           }
-//         >
-//           {status === "completed"
-//             ? "Selesai"
-//             : status === "pending"
-//             ? "Pending"
-//             : "Gagal"}
-//         </Badge>
-//       </header>
-
-//       {/* Messages */}
-//       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-//         {loading ? (
-//           <p className="text-gray-500 text-center">Memuat pesan...</p>
-//         ) : messages.length === 0 ? (
-//           <p className="text-gray-500 text-center">Belum ada pesan</p>
-//         ) : (
-//           messages.map((msg) => (
-//             <div
-//               key={msg.id}
-//               className={`p-2 rounded-md max-w-xs ${
-//                 msg.senderId === "user"
-//                   ? "bg-blue-100 ml-auto"
-//                   : "bg-gray-200 mr-auto"
-//               }`}
-//             >
-//               <p>{msg.content}</p>
-//               <span className="text-xs text-gray-400">
-//                 {msg.timestamp instanceof Date
-//                   ? msg.timestamp.toLocaleTimeString()
-//                   : ""}
-//               </span>
-//             </div>
-//           ))
-//         )}
-//         <div ref={bottomRef} />
-//       </div>
-
-//       {/* Input */}
-//       <div className="p-4 bg-white flex gap-2 border-t">
-//         <Input
-//           placeholder="Ketik pesan..."
-//           value={newMessage}
-//           onChange={(e) => setNewMessage(e.target.value)}
-//           onKeyDown={(e) => {
-//             if (e.key === "Enter") handleSendMessage();
-//           }}
-//         />
-//         <Button onClick={handleSendMessage}>
-//           <ArrowRight className="w-4 h-4" />
-//         </Button>
-//       </div>
-//     </div>
-//   );
-// }
-
-// ============================
-// ############################
-// ============================
-
-// "use client";
-
-// import { useState, useEffect, useRef } from "react";
-// import { useParams } from "next/navigation";
-// import {
-//   collection,
-//   query,
-//   orderBy,
-//   onSnapshot,
-//   addDoc,
-//   doc,
-//   getDoc,
-//   serverTimestamp,
-//   Timestamp,
-//   DocumentData,
-// } from "firebase/firestore";
-// import { db } from "@/lib/firebase";
-// import { Input } from "@/components/ui/input";
-// import { Button } from "@/components/ui/button";
-// import { Badge } from "@/components/ui/badge";
-// import { ArrowRight } from "lucide-react";
-// import { useUserRole } from "@/hooks/use-userRole";
-
-// interface Message {
-//   id: string;
-//   senderId: string;
-//   role: string;
-//   content: string;
-//   timestamp: Date;
-// }
-
-// export default function ChatPage() {
-//   const params = useParams();
-//   const roomChatId = Array.isArray(params.roomChatId)
-//     ? params.roomChatId[0]
-//     : params.roomChatId;
-
-//   const [messages, setMessages] = useState<Message[]>([]);
-//   const [newMessage, setNewMessage] = useState("");
-//   const [status, setStatus] = useState<"pending" | "completed" | "failed">(
-//     "pending"
-//   );
-//   const [loading, setLoading] = useState(true);
-//   const [currentRole, setCurrentRole] = useState<"user" | "admin">("user");
-//   const bottomRef = useRef<HTMLDivElement>(null);
-//   const { role } = useUserRole();
-
-//   useEffect(() => {
-//     console.log("Auth Role: ", role);
-//   }, []);
-
-//   // const getUserRole = async (userId: string): Promise<"user" | "admin"> => {
-//   //   try {
-//   //     const userDoc = await getDoc(doc(db, "users", userId));
-//   //     if (userDoc.exists()) {
-//   //       const data = userDoc.data();
-//   //       return (data.role as "user" | "admin") || "user";
-//   //     }
-//   //     return "user";
-//   //   } catch (err) {
-//   //     console.error(err);
-//   //     return "user";
-//   //   }
-//   // };
-
-//   useEffect(() => {
-//     if (!roomChatId) return;
-
-//     // // Ambil role current user dari roomChat / userId tertentu
-//     // const fetchCurrentUserRole = async () => {
-//     //   try {
-//     //     // Misal kita pakai roomChatId untuk lookup current user uid
-//     //     const roomDoc = await getDoc(doc(db, "roomChats", roomChatId));
-//     //     if (roomDoc.exists()) {
-//     //       const roomData = roomDoc.data() as DocumentData;
-//     //       const userId = roomData.userId || "defaultUserId";
-//     //       const role = await getUserRole(userId);
-
-//     //       setCurrentRole(role);
-//     //     }
-//     //   } catch (err) {
-//     //     console.error(err);
-//     //   }
-//     // };
-//     // fetchCurrentUserRole();
-
-//     // listen roomChat status
-//     const roomRef = doc(db, "roomChats", roomChatId);
-//     const unsubscribeRoom = onSnapshot(roomRef, (snap) => {
-//       if (snap.exists()) {
-//         const data = snap.data() as DocumentData;
-//         setStatus(data.status || "pending");
-//       }
-//     });
-
-//     // listen messages
-//     const messagesRef = collection(db, "roomChats", roomChatId, "messages");
-//     const q = query(messagesRef, orderBy("timestamp", "asc"));
-//     const unsubscribeMessages = onSnapshot(q, async (snapshot) => {
-//       const msgs: Message[] = await Promise.all(
-//         snapshot.docs.map(async (doc) => {
-//           const data = doc.data() as Omit<Message, "id" | "role"> & {
-//             timestamp: Timestamp | null;
-//           };
-//           // const role = await getUserRole(data.senderId);
-//           return {
-//             id: doc.id,
-//             senderId: data.senderId,
-//             role,
-//             content: data.content,
-//             timestamp: data.timestamp
-//               ? (data.timestamp as Timestamp).toDate()
-//               : new Date(),
-//           };
-//         })
-//       );
-//       setMessages(msgs);
-//       setLoading(false);
-//       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-//     });
-
-//     return () => {
-//       unsubscribeRoom();
-//       unsubscribeMessages();
-//     };
-//   }, [roomChatId]);
-
-//   const handleSendMessage = async () => {
-//     if (!newMessage.trim() || !roomChatId) return;
-//     try {
-//       const messagesRef = collection(db, "roomChats", roomChatId, "messages");
-//       await addDoc(messagesRef, {
-//         senderId: role, // role current user
-//         content: newMessage,
-//         timestamp: serverTimestamp(),
-//       });
-//       setNewMessage("");
-//     } catch (err) {
-//       console.error(err);
-//     }
-//   };
-
-//   if (!roomChatId) return <div>Room tidak ditemukan</div>;
-
-//   return (
-//     <div className="min-h-screen bg-slate-50 flex flex-col">
-//       {/* Header */}
-//       <header className="bg-white shadow p-4 flex justify-between items-center">
-//         <h1 className="font-bold text-lg">Chat Transaksi</h1>
-//         <Badge
-//           variant={
-//             status === "completed"
-//               ? "default"
-//               : status === "pending"
-//               ? "secondary"
-//               : "destructive"
-//           }
-//         >
-//           {status === "completed"
-//             ? "Selesai"
-//             : status === "pending"
-//             ? "Pending"
-//             : "Gagal"}
-//         </Badge>
-//       </header>
-
-//       {/* Messages */}
-//       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-//         {loading ? (
-//           <p className="text-gray-500 text-center">Memuat pesan...</p>
-//         ) : messages.length === 0 ? (
-//           <p className="text-gray-500 text-center">Belum ada pesan</p>
-//         ) : (
-//           messages.map((msg) => (
-//             <div
-//               key={msg.id}
-//               className={`p-2 rounded-md max-w-xs break-words ${
-//                 msg.role === "user"
-//                   ? "bg-blue-100 ml-auto text-right"
-//                   : "bg-gray-200 mr-auto text-left"
-//               }`}
-//             >
-//               <p>{msg.content}</p>
-//               <span className="text-xs text-gray-400">
-//                 {msg.timestamp.toLocaleTimeString([], {
-//                   hour: "2-digit",
-//                   minute: "2-digit",
-//                 })}
-//               </span>
-//             </div>
-//           ))
-//         )}
-//         <div ref={bottomRef} />
-//       </div>
-
-//       {/* Input */}
-//       <div className="p-4 bg-white flex gap-2 border-t">
-//         <Input
-//           placeholder="Ketik pesan..."
-//           value={newMessage}
-//           onChange={(e) => setNewMessage(e.target.value)}
-//           onKeyDown={(e) => {
-//             if (e.key === "Enter") handleSendMessage();
-//           }}
-//         />
-//         <Button onClick={handleSendMessage}>
-//           <ArrowRight className="w-4 h-4" />
-//         </Button>
-//       </div>
-//     </div>
-//   );
-// }
-
-// ================================
-// ################################
-// ================================
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -391,21 +10,28 @@ import {
   addDoc,
   doc,
   serverTimestamp,
-  Timestamp,
-  getDocs,
+  updateDoc,
 } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight } from "lucide-react";
-import { useUserRole } from "@/hooks/use-userRole"; // 💡 Pastikan path dan nama file hook sudah benar
-import { TransactionStatus, Message as MessageType } from "@/types"; // Import tipe dari /types/index.ts
+import { useUserRole } from "@/hooks/use-userRole";
+import { TransactionStatus, Message as MessageType } from "@/types";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, ArrowLeft, ArrowRight } from "lucide-react";
+import TransactionDetails from "@/components/commons/TransactionDetail";
+import { useRouter } from "next/navigation";
+import MessageBubble from "@/components/commons/MessageBubble";
 
-// Tipe untuk data pesan yang diterima dari Firestore
 interface ChatMessage extends MessageType {
   id: string;
-  timestamp: Timestamp | Date; // Bisa berupa Timestamp (sebelum convert) atau Date (setelah convert)
+  timestamp: any | Date;
 }
 
 export default function ChatPage() {
@@ -414,64 +40,67 @@ export default function ChatPage() {
     ? params.roomChatId[0]
     : params.roomChatId;
 
-  // Mengambil user, role, dan loading status dari custom hook
   const { user, role, isLoading: isLoadingAuth } = useUserRole();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  // 💡 Gunakan tipe status transaksi yang telah didefinisikan
-  const [txnStatus, setTxnStatus] = useState<TransactionStatus>("draft");
+  const [wldTransferStatus, setWldTransferStatus] =
+    useState<TransactionStatus>("pending");
+  const [transactionStatus, setTransactionStatus] =
+    useState<TransactionStatus>("pending");
   const [isLoadingChat, setIsLoadingChat] = useState(true);
 
+  const [showTransactionDetails, setShowTransactionDetails] = useState(false);
+  const [wldAmount, setWldAmount] = useState(0);
+  const [receivedAmount, setReceivedAmount] = useState(0);
+  const [proofUrl, setProofUrl] = useState("");
+  const [bankAccount, setBankAccount] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankProvider, setBankProvider] = useState("");
+
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  const userCurrent = auth.currentUser;
-
-  console.log("CurentUser: ", userCurrent);
-
-  // 💡 Gabungkan loading dari auth dan chat
   const isLoading = isLoadingAuth || isLoadingChat;
+  const router = useRouter();
 
   useEffect(() => {
     if (!roomChatId || isLoadingAuth) return;
 
-    // Perbaikan: Kita harus mendengarkan dokumen Transaksi, bukan 'roomChats'
-    // Asumsi: Subcollection 'messages' ada di dalam dokumen 'transactions/{txnId}'
     const txnRef = doc(db, "transactions", roomChatId);
 
-    // 1. Listen status transaksi (header chat)
     const unsubscribeTxn = onSnapshot(txnRef, (snap) => {
       if (snap.exists()) {
         const data = snap.data();
-        // 💡 Ambil status dari dokumen transaksi
-        setTxnStatus((data.status as TransactionStatus) || "draft");
+        setWldTransferStatus(
+          (data.wldTransferStatus as TransactionStatus) || "pending"
+        );
+        setTransactionStatus(
+          (data.transactionStatus as TransactionStatus) || "pending"
+        );
+        setWldAmount((data.wldAmount as number) || 0);
+        setReceivedAmount((data.receivedAmount as number) || 0);
+        setProofUrl((data.proofUrl as string) || "null");
+        setBankName((data.bankName as string) || "null");
+        setBankAccount((data.bankAccount as string) || "null");
+        setBankProvider((data.bankProvider as string) || "null");
       }
     });
 
-    // 2. Listen pesan chat
-    // 💡 Gunakan struktur DB yang benar: `transactions/{txnId}/messages`
     const messagesRef = collection(db, "transactions", roomChatId, "messages");
     const q = query(messagesRef, orderBy("timestamp", "asc"));
 
     const unsubscribeMessages = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map((doc) => {
-        const data = doc.data() as Omit<MessageType, "id"> & {
-          timestamp: Timestamp; // Tipe yang benar saat menerima dari Firestore
-        };
-
+        const data = doc.data() as Omit<MessageType, "id"> & { timestamp: any };
         return {
           id: doc.id,
-          // data.sender berisi 'user' atau 'admin' (sesuai skema DB)
           sender: data.sender,
           message: data.message,
           timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
           read: data.read,
         } as ChatMessage;
       });
-
       setMessages(msgs);
       setIsLoadingChat(false);
-      // Scroll ke bawah setelah pesan dimuat
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 0);
@@ -481,14 +110,11 @@ export default function ChatPage() {
       unsubscribeTxn();
       unsubscribeMessages();
     };
-  }, [roomChatId, isLoadingAuth]); // Dependency harus menyertakan isLoadingAuth
+  }, [roomChatId, isLoadingAuth]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !roomChatId || !role) return; // Pastikan role sudah dimuat
+    if (!newMessage.trim() || !roomChatId || !role) return;
 
-    // 💡 PENYEMPURNAAN LOGIKA PENGIRIMAN PESAN
-    // Sesuai skema DB, kita simpan field 'sender' yang berisi 'user' atau 'admin'.
-    // Kita asumsikan role dari useUserRole adalah peran user saat ini.
     const senderRole = role as "user" | "admin";
 
     try {
@@ -502,7 +128,7 @@ export default function ChatPage() {
         sender: senderRole,
         message: newMessage,
         timestamp: serverTimestamp(),
-        read: false, // Default
+        read: false,
       });
       setNewMessage("");
     } catch (err) {
@@ -510,115 +136,222 @@ export default function ChatPage() {
     }
   };
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const usersCol = collection(db, "users");
-        const userSnapshot = await getDocs(usersCol);
-        const usersList = userSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        // setUsers(usersList);
-        // Console log data users
-        console.log("Data Users:", usersList);
-      } catch (err) {
-        console.error("Gagal mengambil data users:", err);
-        // setError(err);
-      } finally {
-        setIsLoadingChat(false);
-      }
-    };
+  const handleEndTransaction = async () => {
+    if (!roomChatId) return;
 
-    fetchUsers();
-  }, []);
+    const txnRef = doc(db, "transactions", roomChatId);
 
-  if (!roomChatId) return <div>Room tidak ditemukan</div>;
-  if (isLoadingAuth) return <div>Memuat data pengguna...</div>;
-  if (!user) return <div>Anda harus login untuk mengakses chat.</div>; // Lindungi rute
-
-  // Fungsi utilitas untuk menentukan tampilan badge
-  const getBadgeVariant = (status: TransactionStatus) => {
-    switch (status) {
-      case "completed":
-      case "paid":
-      case "verified":
-        return "default";
-      case "waiting_confirmation":
-      case "pending":
-        return "secondary";
-      case "failed":
-        return "destructive";
-      default:
-        return "outline";
+    try {
+      await updateDoc(txnRef, {
+        transactionStatus: "confirmed",
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Error updating transaction status:", err);
     }
   };
 
-  // Menentukan apakah pengguna saat ini adalah pengirim pesan (untuk styling)
+  if (!roomChatId)
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-cyber-bg-primary p-6">
+        <div className="text-center bg-cyber-bg-secondary p-6 rounded-lg shadow-lg shadow-cyan-500/10 max-w-md w-full">
+          <h2 className="text-xl font-semibold text-cyber-text-primary">
+            Room Tidak Ditemukan
+          </h2>
+          <p className="text-cyber-text-muted mt-2">
+            Pastikan link yang Anda akses benar.
+          </p>
+        </div>
+      </div>
+    );
+
+  if (isLoadingAuth)
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-cyber-bg-primary p-6">
+        <div className="text-center bg-cyber-bg-secondary p-6 rounded-lg shadow-lg shadow-cyan-500/10 max-w-md w-full">
+          <h2 className="text-xl font-semibold text-cyber-text-primary">
+            Memuat Data Pengguna...
+          </h2>
+          <p className="text-cyber-text-muted mt-2">
+            Harap tunggu, kami sedang memuat data Anda.
+          </p>
+          <div className="mt-4">
+            <div className="animate-spin border-t-4 border-cyber-accent-primary w-12 h-12 rounded-full mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+
+  if (!user)
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-cyber-bg-primary p-6">
+        <div className="text-center bg-cyber-bg-secondary p-6 rounded-lg shadow-lg shadow-cyan-500/10 max-w-md w-full">
+          <h2 className="text-xl font-semibold text-cyber-text-primary">
+            Anda Harus Login
+          </h2>
+          <p className="text-cyber-text-muted mt-2">
+            Silakan login untuk mengakses chat.
+          </p>
+          <button className="mt-4 px-4 py-2 bg-cyber-accent-primary text-white rounded-lg hover:bg-cyber-accent-hover shadow-lg shadow-glow-cyan-important transition-all duration-300 transform hover:scale-105">
+            Login
+          </button>
+        </div>
+      </div>
+    );
+
   const isSender = (messageRole: string) => messageRole === role;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white shadow p-4 flex justify-between items-center sticky top-0 z-10">
-        <h1 className="font-bold text-lg">
-          Chat Transaksi (<span className="capitalize">{role}</span>)
-        </h1>
-        <Badge variant={getBadgeVariant(txnStatus)}>
-          {txnStatus.toUpperCase().replace(/_/g, " ")}
-        </Badge>
+    <div className="min-h-screen bg-cyber-bg-primary flex flex-col">
+      <header
+        className={`bg-cyber-bg-secondary shadow p-4 grid ${
+          user.role === "admin" ? "grid-cols-3" : "grid-cols-2"
+        } items-center sticky top-0 z-10 border-b border-cyber-border-default`}
+      >
+        <div
+          onClick={() => router.back()}
+          className="cursor-pointer text-cyber-text-muted hover:text-cyber-text-primary flex items-center gap-2"
+        >
+          <ArrowLeft />
+          <span>Back</span>
+        </div>
+
+        <div
+          className={`flex flex-col space-y-2 justify-center ${
+            user.role === "admin" ? "items-center" : "items-end"
+          }`}
+        >
+          <Badge
+            className={`${
+              wldTransferStatus === "pending"
+                ? "bg-cyber-accent-warning/20 text-cyber-accent-warning"
+                : wldTransferStatus === "confirmed"
+                ? "bg-cyber-accent-success/20 text-cyber-accent-success"
+                : "bg-cyber-accent-danger/20 text-cyber-accent-danger"
+            }`}
+          >
+            {wldTransferStatus === "pending"
+              ? "Menunggu token sampai"
+              : wldTransferStatus === "confirmed"
+              ? "WLD berhasil diterima"
+              : "Transaksi gagal, token tidak diterima."}
+          </Badge>
+          <Badge
+            className={`${
+              transactionStatus === "pending"
+                ? "bg-cyber-accent-warning/20 text-cyber-accent-warning"
+                : transactionStatus === "confirmed"
+                ? "bg-cyber-accent-success/20 text-cyber-accent-success"
+                : "bg-cyber-accent-danger/20 text-cyber-accent-danger"
+            }`}
+          >
+            {transactionStatus === "pending"
+              ? "Transaksi berlangsung"
+              : transactionStatus === "confirmed"
+              ? "Transaksi berhasil"
+              : "Transaksi gagal, tidak ada penukaran."}
+          </Badge>
+        </div>
+
+        {transactionStatus !== "confirmed" && user.role === "admin" && (
+          <div className="flex justify-end">
+            <ActionMenu
+              wldTransferStatus={wldTransferStatus}
+              handleEndTransaction={handleEndTransaction}
+            />
+          </div>
+        )}
       </header>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoading ? (
-          <p className="text-gray-500 text-center">Memuat pesan...</p>
+          <p className="text-cyber-text-muted text-center">Memuat pesan...</p>
         ) : messages.length === 0 ? (
-          <p className="text-gray-500 text-center">Belum ada pesan</p>
+          <p className="text-cyber-text-muted text-center">Belum ada pesan</p>
         ) : (
           messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`p-2 rounded-lg max-w-xs break-words ${
-                isSender(msg.sender)
-                  ? "bg-blue-600 text-white ml-auto"
-                  : "bg-gray-200 text-gray-800 mr-auto"
-              }`}
-            >
-              <p className="font-medium">{msg.message}</p>
-              <span
-                className={`text-xs block mt-1 ${
-                  isSender(msg.sender) ? "text-blue-200" : "text-gray-500"
-                }`}
-              >
-                {msg.timestamp instanceof Date
-                  ? msg.timestamp.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : "..."}
-              </span>
-            </div>
+            <MessageBubble
+              id={msg.id}
+              sender={msg.sender}
+              message={msg.message}
+              timestamp={msg.timestamp}
+              currentRole={role}
+            />
           ))
         )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="p-4 bg-white flex gap-2 border-t sticky bottom-0 z-10">
-        <Input
-          placeholder="Ketik pesan..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSendMessage();
-          }}
-          disabled={isLoading || !role} // Nonaktifkan input jika loading atau role belum ada
+      <div
+        className={`p-4 pt-0 bg-cyber-bg-secondary flex flex-col gap-2 sticky bottom-0 z-10 border-t border-cyber-border-default`}
+      >
+        {transactionStatus === "confirmed" &&
+          wldTransferStatus === "confirmed" && (
+            <div className="absolute h-1/2 bottom-0 left-0 right-0 bg-cyber-accent-success/65 backdrop-blur-xs text-cyber-text-primary font-bold text-lg p-4 text-center cursor-not-allowed z-50">
+              <span className="absolute bottom-6 left-0 right-0 text-cyber-accent-warning rounded-md font-extrabold">
+                Transaksi Sudah Selesai
+              </span>
+            </div>
+          )}
+        <TransactionDetails
+          wldAmount={wldAmount}
+          receivedAmount={receivedAmount}
+          bankName={bankName}
+          bankProvider={bankProvider}
+          bankAccount={bankAccount}
+          proofUrl={proofUrl}
+          showTransactionDetails={showTransactionDetails}
+          setShowTransactionDetails={setShowTransactionDetails}
         />
-        <Button onClick={handleSendMessage} disabled={isLoading || !role}>
-          <ArrowRight className="w-4 h-4" />
-        </Button>
+        <div className="flex justify-center items-center">
+          <Input
+            placeholder="Ketik pesan..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSendMessage();
+            }}
+            disabled={
+              isLoading ||
+              !role ||
+              (transactionStatus === "confirmed" &&
+                wldTransferStatus == "confirmed")
+            }
+            className="bg-cyber-bg-primary text-cyber-text-primary border-cyber-border-default focus:border-cyber-accent-primary"
+          />
+          <Button
+            onClick={handleSendMessage}
+            disabled={
+              isLoading ||
+              !role ||
+              (transactionStatus === "confirmed" &&
+                wldTransferStatus == "confirmed")
+            }
+            className="bg-cyber-accent-primary hover:bg-cyber-accent-hover text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg shadow-glow-cyan-important transition-all duration-300 transform hover:scale-105"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
+
+const ActionMenu = ({ wldTransferStatus, handleEndTransaction }) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button className="p-2 text-cyber-text-muted hover:text-cyber-text-primary cursor-pointer">
+        <MoreHorizontal className="w-5 h-5" />
+      </button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent className="w-48 bg-cyber-bg-secondary border-cyber-border-default shadow-lg shadow-cyan-500/10">
+      <DropdownMenuItem
+        onClick={handleEndTransaction}
+        disabled={wldTransferStatus === "failed"}
+        className="text-sm text-cyber-text-primary focus:bg-cyber-bg-primary"
+      >
+        Selesaikan Transaksi
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);

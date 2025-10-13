@@ -17,9 +17,10 @@ import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Mail, Lock, Chrome } from "lucide-react";
 import Link from "next/link";
 import { signInWithGoogle } from "@/lib/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { setCookie } from "cookies-next";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -31,7 +32,7 @@ export default function Login() {
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
+      if (user && user.emailVerified) {
         router.push("/dashboard");
       }
     });
@@ -44,21 +45,42 @@ export default function Login() {
     setError("");
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
 
-      const user = auth.currentUser;
+      if (user && !user.emailVerified) {
+        setError(
+          "Email Anda belum terverifikasi. Silakan periksa email Anda untuk verifikasi. cek Email dan folder Spam"
+        );
+        return;
+      }
 
-      // console.log("USER: ", user);
       if (user) {
         const token = await user.getIdToken();
         setCookie("auth-token", token, { path: "/" });
         setCookie("user-email", user.email, { path: "/" });
       }
 
-      if (user !== null && user.email === "abii.manyun@gmail.com") {
-        router.push("/admin");
-      } else {
-        router.push("/dashboard");
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          const role = userData.role;
+
+          if (role === "admin") {
+            router.push("/admin");
+          } else {
+            router.push("/dashboard");
+          }
+        } else {
+          setError("Data pengguna tidak ditemukan.");
+        }
       }
     } catch (error: any) {
       setError(error.message || "Terjadi kesalahan saat login");
@@ -73,6 +95,13 @@ export default function Login() {
 
     try {
       await signInWithGoogle();
+
+      const user = auth.currentUser;
+      if (user && !user.emailVerified) {
+        setError("Email Anda belum diverifikasi.");
+        return;
+      }
+
       router.push("/dashboard");
     } catch (error: any) {
       setError(error.message || "Terjadi kesalahan saat login dengan Google");
@@ -82,28 +111,32 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-cyber-bg-primary flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">WLD</span>
+            <div className="w-10 h-10 bg-cyber-accent-primary rounded-lg flex items-center justify-center shadow-glow-cyan">
+              <span className="text-cyber-bg-primary font-bold">WLD</span>
             </div>
-            <span className="font-bold text-2xl">Converter</span>
+            <span className="font-bold text-2xl text-cyber-text-primary">
+              Converter
+            </span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-cyber-text-primary">
             Selamat Datang Kembali
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-cyber-text-muted mt-2">
             Masuk ke akun Anda untuk melanjutkan
           </p>
         </div>
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg shadow-cyan-500/10 bg-cyber-bg-secondary">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Masuk</CardTitle>
-            <CardDescription className="text-center">
+            <CardTitle className="text-2xl text-center text-cyber-text-primary">
+              Masuk
+            </CardTitle>
+            <CardDescription className="text-center text-cyber-text-muted">
               Pilih metode login untuk melanjutkan
             </CardDescription>
           </CardHeader>
@@ -111,7 +144,7 @@ export default function Login() {
             {/* Google Login */}
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full text-cyber-text-primary border-cyber-border-default hover:bg-cyber-bg-primary"
               onClick={handleGoogleLogin}
               disabled={loading}
             >
@@ -124,45 +157,51 @@ export default function Login() {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Atau</span>
+                <span className="bg-cyber-bg-secondary px-2 text-cyber-text-muted">
+                  Atau
+                </span>
               </div>
             </div>
 
             {/* Email Login Form */}
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-cyber-text-primary">
+                  Email
+                </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-cyber-text-muted" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="nama@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-cyber-bg-primary text-cyber-text-primary border-cyber-border-default focus:border-cyber-accent-primary"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-cyber-text-primary">
+                  Password
+                </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-cyber-text-muted" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Masukkan password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 bg-cyber-bg-primary text-cyber-text-primary border-cyber-border-default focus:border-cyber-accent-primary"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 text-cyber-text-muted hover:text-cyber-text-primary"
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -179,7 +218,11 @@ export default function Login() {
                 </Alert>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full bg-cyber-accent-primary hover:bg-cyber-accent-hover text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg shadow-glow-cyan-important transition-all duration-300 transform hover:scale-105"
+                disabled={loading}
+              >
                 {loading ? "Memproses..." : "Masuk"}
               </Button>
             </form>
@@ -187,17 +230,17 @@ export default function Login() {
             <div className="text-center">
               <Link
                 href="/forgot-password"
-                className="text-sm text-blue-600 hover:underline"
+                className="text-sm text-cyber-accent-primary hover:underline"
               >
                 Lupa password?
               </Link>
             </div>
 
-            <div className="text-center text-sm text-gray-600">
+            <div className="text-center text-sm text-cyber-text-muted">
               Belum punya akun?{" "}
               <Link
                 href="/register"
-                className="text-blue-600 hover:underline font-medium"
+                className="text-cyber-accent-primary hover:underline font-medium"
               >
                 Daftar sekarang
               </Link>
@@ -207,7 +250,7 @@ export default function Login() {
 
         {/* Security Notice */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-cyber-text-muted">
             <strong>Keamanan Terjamin:</strong> Data Anda dilindungi dengan
             enkripsi end-to-end dan verifikasi dua faktor.
           </p>
