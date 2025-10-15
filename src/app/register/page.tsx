@@ -73,10 +73,19 @@ export default function RegisterPage() {
         password
       );
       const user = userCredential.user;
+      const username = name;
 
       await updateProfile(user, { displayName: name });
 
-      await sendEmailVerification(user);
+      // await sendEmailVerification(user);
+
+      await fetch("/api/send-verification", {
+        method: "POST",
+        body: JSON.stringify({ email, username, actionType: "verifyEmail" }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
@@ -108,8 +117,17 @@ export default function RegisterPage() {
 
     try {
       const userCredential = await signInWithGoogle();
+      const username = name;
 
-      await sendEmailVerification(userCredential);
+      // await sendEmailVerification(userCredential);
+
+      await fetch("/api/send-verification", {
+        method: "POST",
+        body: JSON.stringify({ email, username, actionType: "verifyEmail" }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       await setDoc(
         doc(db, "users", userCredential.uid),

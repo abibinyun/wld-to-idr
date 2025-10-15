@@ -1,28 +1,16 @@
-import admin from "firebase-admin";
+import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
+const serviceAccount = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+};
+
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(serviceAccount as any),
   });
 }
 
-const auth = admin.auth();
-const db = admin.firestore();
-
-export const verifyIdToken = async (token: string) => {
-  return await auth.verifyIdToken(token);
-};
-
-export const getUserRole = async (uid: string) => {
-  const userDoc = await db.collection("users").doc(uid).get();
-  if (userDoc.exists) {
-    return userDoc.data()?.role || "user";
-  }
-  throw new Error("User not found");
-};
-
-export { db, auth };
+export const auth = getAuth();
